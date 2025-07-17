@@ -18,9 +18,11 @@ Description:
 5. The script will filter out some letters from the results if conflicting with MacOS modifier keys.
 6. The script will execute the steps with a delay to allow for proper execution.
 
-Note:
-Some keys are filtered out since MacOS may mistake them for modifier keys.
-For example, 'm' and 'M' are filtered out from pyautogui commands
+Note on Limitaions:
+1. The AI will do based on 1 automated screenshot so if the window changes it won't work.
+2. You will not be able to multitask while the script is running since the keyboard will in use.
+3. Some keys are filtered out since MacOS may mistake them for modifier keys.
+ - For example, 'm' and 'M' are filtered out from pyautogui commands
 '''
 
 prompt = """
