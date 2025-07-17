@@ -26,7 +26,7 @@ Note on Limitaions:
 '''
 
 prompt = """
-Goal: access the web address bar and search for a random realistic search query
+Goal: in the first 3x3 cells of the google sheets, input a sample realistic data entry
 Operating System: MacOS
 
 Tasks:
