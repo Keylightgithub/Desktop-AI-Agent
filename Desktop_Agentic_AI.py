@@ -3,7 +3,7 @@ import google.generativeai as genai
 from PIL import Image
 import os
 import time
-from env import GOOGLE_API_KEY
+from env import GOOGLE_API_KEY # Assuming env.py exists and contains GOOGLE_API_KEY
 
 '''
 How to use:
@@ -26,14 +26,14 @@ Note on Limitaions:
 '''
 
 prompt = """
-Goal: in the first 3x3 cells of the google sheets, input a sample realistic data entry
+Goal: in the first 3x3 cells of the sheet, input a sample realistic data entry
 Operating System: MacOS
 
 Tasks:
-1. plan out a list of steps to accomplish the goal using only pyautogui keys, hotkeys, and write.
+1. Accomplish the goal using only pyautogui keys, hotkeys, and write (no clicks).
 2. Plan out navigation steps completely based on image analysis.
-3. give the output in a list format and include the prefix pyautogui for each command.
-4. only give the list results, no extra. no comments.
+3. Give the output in a list format and include the prefix pyautogui for each command.
+4. Only give the list results, no extra. no comments.
 """
 
 
@@ -129,25 +129,33 @@ def execute_step(step):
     """
     Execute a single step string, e.g. pyautogui.hotkey('command', 'l')
     This version now consistently uses pyautogui.write with an increased interval.
+    The 'm' and 'M' characters are filtered from string inputs unless they are part of
+    the 'command' key in a pyautogui.hotkey call.
     """
-    # Filter out 'm' and 'M' from the step string before execution since Macos may mistake them for modifier keys
-    filtered_step = "".join([char for char in step if char not in ('m', 'M')])
-    
     # Remove any surrounding backticks or whitespace
-    filtered_step = filtered_step.strip('`').strip()
-    # Try to match pyautogui.hotkey, pyautogui.write, pyautogui.press
-    hotkey_match = re.match(r"pyautogui\.hotkey\((.*)\)", filtered_step)
-    write_match = re.match(r"pyautogui\.write\((.*)\)", filtered_step)
-    press_match = re.match(r"pyautogui\.press\((.*)\)", filtered_step)
+    step = step.strip('`').strip()
+    
+    hotkey_match = re.match(r"pyautogui\.hotkey\((.*)\)", step)
+    write_match = re.match(r"pyautogui\.write\((.*)\)", step)
+    press_match = re.match(r"pyautogui\.press\((.*)\)", step)
 
     if hotkey_match:
-        args = ast.literal_eval(f'[{hotkey_match.group(1)}]')
-        print(f"Executing hotkey (keydown for each, then keyup in reverse): {args}")
+        original_args = ast.literal_eval(f'[{hotkey_match.group(1)}]')
+        filtered_args = []
+        for key in original_args:
+            # Only filter 'm' and 'M' if the key is not 'command' or 'cmd'
+            if isinstance(key, str) and key.lower() not in ('command', 'cmd'):
+                filtered_key = "".join([char for char in key if char.lower() not in ('m')])
+                filtered_args.append(filtered_key)
+            else:
+                filtered_args.append(key)
+
+        print(f"Executing hotkey (keydown for each, then keyup in reverse): {filtered_args}")
         # Press down all keys
-        for key in args:
+        for key in filtered_args:
             pyautogui.keyDown(key)
         # Release all keys in reverse order
-        for key in reversed(args):
+        for key in reversed(filtered_args):
             pyautogui.keyUp(key)
     elif write_match:
         # Check if the argument is a string before filtering
@@ -155,7 +163,7 @@ def execute_step(step):
         if arg_str.startswith("'") and arg_str.endswith("'"):
             # If it's a string literal, extract the content and filter
             original_content = arg_str.strip("'")
-            filtered_content = "".join([char for char in original_content if char not in ('m', 'M')])
+            filtered_content = "".join([char for char in original_content if char.lower() not in ('m')])
             arg = f"'{filtered_content}'" # Re-wrap in quotes
         else:
             # For non-string arguments, use as is (e.g., numbers, variables)
@@ -175,8 +183,10 @@ def execute_step(step):
         key_match = re.match(r"^\s*['\"]([^'\"]+)['\"]\s*(,\s*presses=(\d+))?$", args_str)
         if key_match:
             key = key_match.group(1)
-            # Filter 'm' and 'M' from the key itself
-            key = "".join([char for char in key if char not in ('m', 'M')])
+            # Filter 'm' and 'M' from the key itself, but ensure it's not 'command'
+            if key.lower() not in ('command', 'cmd'):
+                key = "".join([char for char in key if char.lower() not in ('m')])
+            
             if key_match.group(3): # If presses argument exists
                 presses = int(key_match.group(3))
         
@@ -184,9 +194,9 @@ def execute_step(step):
             print(f"Pressing: '{key}' {presses} time(s)")
             pyautogui.press(key, presses=presses)
         else:
-            print(f"Could not parse pyautogui.press arguments: {filtered_step}")
+            print(f"Could not parse pyautogui.press arguments: {step}")
     else:
-        print(f"Unrecognized step: {filtered_step}")
+        print(f"Unrecognized step: {step}")
 
 steps = parse_steps(response.text)
 print("\nParsed pyautogui steps:")
@@ -194,6 +204,6 @@ for s in steps:
     print(f"  {s}")
 print()
 for step in steps:
-    time.sleep(0.8)
+    time.sleep(1)
     execute_step(step)
-
+    
