@@ -1,5 +1,7 @@
 Example use case: automated data entry.
-prompt: in the first 3x3 cells of the sheet, input a sample realistic data entry
+
+Prompt 1: in the first 3x3 cells of the sheet, input a sample realistic data entry
+
 <img width="448" height="346" alt="Screenshot 2025-07-17 at 3 06 25 AM" src="https://github.com/user-attachments/assets/c055405b-8b17-43c1-82a3-c43437cb6ff4" />
 
 
