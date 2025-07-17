@@ -6,7 +6,19 @@ import time
 from env import GOOGLE_API_KEY
 
 '''
-Note: some keys are filtered out since MacOS may mistake them for modifier keys.
+How to use:
+1. Once the script is ran, the script will hide the first window,
+2. Next the second window will be the one that the screenshot will take and the AI will analyze.
+3. The AI will generate a list of steps to accomplish the goal.
+4. The script will parse the AI response and execute the steps using pyautogui.
+5. The script will filter out some letters from the results if conflicting with MacOS modifier keys.
+6. The script will execute the steps with a delay to allow for proper execution.
+'''
+
+
+'''
+Note:
+Some keys are filtered out since MacOS may mistake them for modifier keys.
 For example, 'm' and 'M' are filtered out from pyautogui commands
 '''
 
