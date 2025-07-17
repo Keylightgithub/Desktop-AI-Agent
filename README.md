@@ -26,12 +26,12 @@ Note on Limitaions:
 '''
 
 prompt = """
-Goal: access the web address bar and search for a random realistic search query
+Goal: in the first 3x3 cells of the sheet, input a sample realistic data entry
 Operating System: MacOS
 
 Tasks:
-1. plan out a list of steps to accomplish the goal using only pyautogui keys, hotkeys, and write.
+1. Accomplish the goal using only pyautogui keys, hotkeys, and write (no clicks).
 2. Plan out navigation steps completely based on image analysis.
-3. give the output in a list format and include the prefix pyautogui for each command.
-4. only give the list results, no extra. no comments.
+3. Give the output in a list format and include the prefix pyautogui for each command.
+4. Only give the list results, no extra. no comments.
 """
