@@ -7,7 +7,8 @@ from env import GOOGLE_API_KEY
 
 '''
 How to use:
-1. Once the script is ran, the script will hide the first window,
+1. Only change the prompt Goal and Operating system in the prompt variable.
+2. Once the script is ran, the script will hide the first window,
 2. Next the second window will be the one that the screenshot will take and the AI will analyze.
 3. The AI will generate a list of steps to accomplish the goal.
 4. The script will parse the AI response and execute the steps using pyautogui.
@@ -21,6 +22,18 @@ Note:
 Some keys are filtered out since MacOS may mistake them for modifier keys.
 For example, 'm' and 'M' are filtered out from pyautogui commands
 '''
+
+prompt = """
+Goal: access the web address bar and search for a random realistic search query
+Operating System: MacOS
+
+Tasks:
+1. plan out a list of steps to accomplish the goal using only pyautogui keys, hotkeys, and write.
+2. Plan out navigation steps completely based on image analysis.
+3. give the output in a list format and include the prefix pyautogui for each command.
+4. only give the list results, no extra. no comments.
+"""
+
 
 # macOS hotkey to hide VS Code window before next steps
 pyautogui.keyDown('command')
@@ -41,16 +54,6 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 
 # Generate content from the image and a prompt
 # No need to open a file, we pass the in-memory image object directly
-prompt = """
-goal: access the web address bar and search for a random realistic search query
-Operating System: MacOS
-
-Tasks:
-1. plan out a list of steps to accomplish the goal using only pyautogui keys, hotkeys, and write.
-2. Plan out navigation steps completely based on image analysis.
-3. give the output in a list format and include the prefix pyautogui for each command.
-4. only give the list results, no extra. no comments.
-"""
 
 response = model.generate_content([prompt, screenshot_image])
 
