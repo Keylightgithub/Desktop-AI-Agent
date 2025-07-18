@@ -6,7 +6,8 @@ Example prompt 1: In the selected cell(s) of the sheet, input a 3x3 sample reali
 
 Example prompt 2: In this google doc, solve the question
 
-<img width="497" height="321" alt="image" src="https://github.com/user-attachments/assets/1a4aa5a9-d194-4041-bd74-09ee0735264e" />
+<img width="552" height="319" alt="image" src="https://github.com/user-attachments/assets/0b2c6bea-6e78-4bf7-87e4-07db93127bac" />
+
 
 
 '''
