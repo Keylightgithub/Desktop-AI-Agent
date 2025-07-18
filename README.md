@@ -9,14 +9,15 @@ Prompt 1: In the selected cell(s) of the sheet, input a 3x3 sample realistic dat
 How to use:
 1. Add your Google API key to env.py file
 2. Only change the prompt Goal and Operating system in the prompt variable below.
+3. Keep the window you want to automate as the second window behind the first one ex. google sheets behind VS code editor.
 
 Description:
-1. Once the script is ran, the script will hide the first window,
-2. Next the second window will be the one that the screenshot will take and the AI will analyze.
+1. Once the script is ran, the script will hide the first window ex. vs code editor.
+2. Next the second window behind the first will be screenshotted and sent with the prompt to the AI.
 3. The AI will generate a list of steps to accomplish the goal.
-4. The script will parse the AI response and execute the steps using pyautogui.
-5. The script will filter out some letters from the results if conflicting with MacOS modifier keys.
-6. The script will execute the steps with a delay to allow for proper execution.
+4. The script parses the AI response and execute the steps using pyautogui.
+5. The script filters out some letters from the results if conflicting with MacOS modifier keys.
+6. The script executes the steps with a delay to allow for proper execution.
 
 Note on Limitaions:
 1. The AI will do based on 1 automated screenshot so if the window changes it won't work.
