@@ -26,7 +26,7 @@ Note on Limitaions:
 '''
 
 prompt = """
-Goal: in the first 3x3 cells of the sheet, input a sample realistic data entry
+Goal: In the selected cell(s) of the sheet, input a 3x3 sample realistic data entry.
 Operating System: MacOS
 
 Tasks:
