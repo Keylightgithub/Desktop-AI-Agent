@@ -27,7 +27,7 @@ Description:
 6. The script executes the steps with a delay to allow for proper execution.
 
 Note on Limitaions:
-1. The AI will do based on 1 automated screenshot so if the window changes it won't work.
+1. The AI will do based on 1 automated screenshot so if the window changes it won't work well.
 2. You will not be able to multitask while the script is running since the keyboard will be in use.
 '''
 
