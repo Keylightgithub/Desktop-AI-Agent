@@ -12,10 +12,17 @@ Example prompt 2: In this google doc, solve the question
 
 
 
+goal = \
+'''
+In the selected cell(s) of the sheet, input a 4x4 sample realistic data entry.
+'''
+
+
 '''
 How to use:
+1. Install dependencies
 1. Add your Google/Gemini API key to env.py file
-2. Only change the prompt Goal and Operating system in the prompt variable below.
+2. Edit the above prompt "goal" variable to any request.
 3. Keep the window you want to automate as the second window behind the first one ex. google sheets behind VS code editor.
 
 Description:
@@ -30,24 +37,3 @@ Note on Limitaions:
 1. The AI will do based on 1 automated screenshot so if the window changes it won't work well.
 2. You will not be able to multitask while the script is running since the keyboard will be in use.
 '''
-
-operating_system = \
-"""
-MacOS
-"""
-
-goal = \
-'''
-In the selected cell(s) of the sheet, input a 4x4 sample realistic data entry.
-'''
-
-prompt = f"""
-goal: {goal}
-operating System: {operating_system}
-
-Tasks:
-1. Accomplish the goal using only pyautogui keys, hotkeys, and write (no clicks).
-2. Plan out navigation steps completely based on image analysis.
-3. Give the output in a list format and include the prefix pyautogui for each command.
-4. Only give the list results, no extra.
-"""
