@@ -12,7 +12,7 @@ Example prompt 2: In this google doc, solve the question
 
 '''
 How to use:
-1. Add your Google API key to env.py file
+1. Add your Google/Gemini API key to env.py file
 2. Only change the prompt Goal and Operating system in the prompt variable below.
 3. Keep the window you want to automate as the second window behind the first one ex. google sheets behind VS code editor.
 
@@ -31,13 +31,23 @@ Note on Limitaions:
  - For example, 'm' and 'M' are filtered out from pyautogui commands
 '''
 
-prompt = """
-Goal: In the selected cell(s) of the sheet, input a 3x3 sample realistic data entry.
-Operating System: MacOS
+operating_system = \
+"""
+MacOS
+"""
+
+goal = \
+'''
+In the selected cell(s) of the sheet, input a 3x3 sample realistic data entry.
+'''
+
+prompt = f"""
+goal: {goal}
+operating System: {operating_system}
 
 Tasks:
 1. Accomplish the goal using only pyautogui keys, hotkeys, and write (no clicks).
 2. Plan out navigation steps completely based on image analysis.
 3. Give the output in a list format and include the prefix pyautogui for each command.
-4. Only give the list results, no extra. no comments.
+4. Only give the list results, no extra.
 """
