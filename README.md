@@ -1,8 +1,9 @@
 Example use case: automated data entry.
 
-Example prompt 1: In the selected cell(s) of the sheet, input a 3x3 sample realistic data entry.
+Example prompt 1: In the selected cell(s) of the sheet, input a 4x4 sample realistic data entry.
 
-<img width="448" height="346" alt="Screenshot 2025-07-17 at 3 06 25 AM" src="https://github.com/user-attachments/assets/c055405b-8b17-43c1-82a3-c43437cb6ff4" />
+<img width="551" height="290" alt="image" src="https://github.com/user-attachments/assets/fbea66a6-a59d-4995-89c9-c73233524d65" />
+
 
 Example prompt 2: In this google doc, solve the question
 
