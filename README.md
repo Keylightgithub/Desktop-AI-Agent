@@ -22,15 +22,13 @@ Description:
 1. Once the script is ran, the script will hide the first window ex. vs code editor.
 2. Next the second window behind the first will be screenshotted and sent with the prompt to the AI.
 3. The AI will generate a list of steps to accomplish the goal.
-4. The script parses the AI response and execute the steps using pyautogui.
-5. The script filters out some letters from the results if conflicting with MacOS modifier keys.
+4. The script cleans & parses the AI response of pyautogui commands.
+5. Pyautogui typing is converted to MacOS applescript typing to avoid accidental modifier keys activation.
 6. The script executes the steps with a delay to allow for proper execution.
 
 Note on Limitaions:
 1. The AI will do based on 1 automated screenshot so if the window changes it won't work.
-2. You will not be able to multitask while the script is running since the keyboard will in use.
-3. Some keys are filtered out since MacOS may mistake them for modifier keys.
- - For example, 'm' and 'M' are filtered out from pyautogui commands
+2. You will not be able to multitask while the script is running since the keyboard will be in use.
 '''
 
 operating_system = \
@@ -40,7 +38,7 @@ MacOS
 
 goal = \
 '''
-In the selected cell(s) of the sheet, input a 3x3 sample realistic data entry.
+In the selected cell(s) of the sheet, input a 4x4 sample realistic data entry.
 '''
 
 prompt = f"""
