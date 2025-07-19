@@ -9,6 +9,7 @@ import ast
 import sys
 from env import GOOGLE_API_KEY # Assuming env.py exists and contains GOOGLE_API_KEY
 
+
 goal = \
 '''
 In the selected cell(s) of the sheet, input a 4x4 sample realistic data entry.
@@ -18,17 +19,17 @@ In the selected cell(s) of the sheet, input a 4x4 sample realistic data entry.
 '''
 How to use:
 1. Install dependencies
-1. Add your Google/Gemini API key to env.py file
-2. Edit the above prompt "goal" variable to any request.
-3. Keep the window you want to automate as the second window behind the first one ex. google sheets behind VS code editor.
+2. Add your Google/Gemini API key to env.py file
+3. Edit the above prompt "goal" variable to any request.
+4. Keep the window you want to automate as the second window behind the first one ex. google sheets behind VS code editor.
 
 Description:
-1. Once the script is ran, the script will hide the first window ex. vs code editor.
-2. Next the second window behind the first will be screenshotted and sent with the prompt to the AI.
+1. On run, the script will hide the first window ex. vs code editor.
+2. After hiding, the second will be screenshotted and sent with the prompt "goal" to the AI.
 3. The AI will generate a list of steps to accomplish the goal.
 4. The script cleans & parses the AI response of pyautogui commands.
 5. Pyautogui typing is converted to MacOS applescript typing to avoid accidental modifier keys activation.
-6. The script executes the steps with a delay to allow for proper execution.
+6. The script executes the steps with an editable delay to allow for proper execution.
 
 Note on Limitaions:
 1. The AI will do based on 1 automated screenshot so if the window changes it won't work well.
@@ -90,7 +91,7 @@ print(f"--- Screenshot taken in {screenshot_execution_time:.4f} seconds ---")
 
 
 # Load the model that supports vision
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 # ---- Timing the AI response ----
 print(f"--- Requesting AI response for {operating_system}... ---")
