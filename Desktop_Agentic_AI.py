@@ -1,18 +1,21 @@
 import pyautogui
 import google.generativeai as genai
 from PIL import Image
-import os
 import time
 import subprocess
 import re
 import ast
 import sys
-from env import GOOGLE_API_KEY # Assuming env.py exists and contains GOOGLE_API_KEY
+try:
+    from env import GOOGLE_API_KEY
+except ImportError:
+    print("Error: 'env.py' file not found. Please create it and add your GOOGLE_API_KEY.")
+    sys.exit(1)
 
 
 goal = \
 '''
-In the selected cell(s) of the sheet, input a 4x4 sample realistic data entry.
+In this google doc, solve the question(s)
 '''
 
 
@@ -42,9 +45,18 @@ Note on Limitaions:
 # Record the start time
 start_time = time.time()
 
+# --- Unified Editable Delay ---
+# This single value (in seconds) controls the delay AFTER each command is executed.
+# For individual and multi-press commands (e.g., presses=3), this same delay is also applied
+STEP_DELAY = 0.1 # Editable: change this value to control the overall script speed. (Recommended: 0.1)
+# --- End of delay configuration ---
+
+
 # --- Automatic Operating System Detection ---
 # The script now automatically detects the OS using the sys library.
-if sys.platform == 'darwin':
+IS_MACOS = sys.platform == 'darwin'
+
+if IS_MACOS:
     operating_system = "MacOS"
 elif sys.platform == 'win32':
     operating_system = "Windows"
@@ -66,12 +78,10 @@ Tasks:
 """
 
 # Check the operating system to perform OS-specific actions
-if sys.platform == 'darwin':
+if IS_MACOS:
     # macOS hotkey to hide the current window (e.g., VS Code) before next steps
-    # Using keyDown and keyUp as requested for reliability.
-    pyautogui.keyDown('command')
-    pyautogui.press('h')
-    pyautogui.keyUp('command')
+    # Using AppleScript for reliability on macOS.
+    subprocess.run(["osascript", "-e", 'tell application "System Events" to keystroke "h" using command down'])
 
 
 time.sleep(1)  # Wait a little to allow user to prepare the screen
@@ -108,178 +118,298 @@ print(f"--- AI response received in {ai_response_time:.2f} seconds ---")
 # ---- END Timing the AI response ----
 
 
+# --- (FIXED) AppleScript Key Code Map for Special Keys ---
+# Using key codes is more reliable for hotkeys and non-character keys.
+# This map is based on the US QWERTY layout.
+KEY_CODE_MAP = {
+    # Alphanumeric
+    'a': 0, 'b': 11, 'c': 8, 'd': 2, 'e': 14, 'f': 3, 'g': 5, 'h': 4, 'i': 34,
+    'j': 38, 'k': 40, 'l': 37, 'm': 46, 'n': 45, 'o': 31, 'p': 35, 'q': 12,
+    'r': 15, 's': 1, 't': 17, 'u': 32, 'v': 9, 'w': 13, 'x': 7, 'y': 16, 'z': 6,
+    '0': 29, '1': 18, '2': 19, '3': 20, '4': 21, '5': 23, '6': 22, '7': 26,
+    '8': 28, '9': 25,
+    # Symbols
+    '=': 24, '-': 27, '[': 33, ']': 30, '\\': 42, ';': 41, "'": 39, ',': 43,
+    '.': 47, '/': 44, '`': 50,
+    # Special Keys
+    'enter': 36, 'return': 36,
+    'tab': 48,
+    'space': 49,
+    'delete': 51,  # backspace
+    'escape': 53, 'esc': 53,
+    # Arrow Keys
+    'left': 123,
+    'right': 124,
+    'down': 125,
+    'up': 126,
+}
+
+def pyautogui_to_applescript(command):
+    """
+    (FIXED) Converts a PyAutoGUI command string to its AppleScript equivalent.
+    Handles key presses, hotkeys (prioritizing key codes), and text writing.
+    """
+    # Hotkeys with modifiers: pyautogui.hotkey('mod1', 'mod2', 'key')
+    hotkey_match = re.match(r"pyautogui\.hotkey\((.*)\)", command)
+    if hotkey_match:
+        keys = [k.strip().strip("'\"") for k in hotkey_match.group(1).split(',')]
+        if not keys: return None
+        
+        key_press = keys[-1]
+        modifiers = keys[:-1]
+        
+        modifier_map = {'command': 'command', 'cmd': 'command', 'ctrl': 'control', 'alt': 'option', 'shift': 'shift'}
+        active_modifiers = [modifier_map[mod] for mod in modifiers if mod in modifier_map]
+        mod_string = " using {" + ", ".join(f'{mod} down' for mod in active_modifiers) + "}" if active_modifiers else ""
+        
+        key_lower = key_press.lower()
+        # For hotkeys, always prefer key code if available for reliability
+        if key_lower in KEY_CODE_MAP:
+            key_action = f"key code {KEY_CODE_MAP[key_lower]}"
+        else:
+            # Fallback to keystroke for unmapped keys
+            escaped_key = key_press.replace("\\", "\\\\").replace('"', '\\"')
+            key_action = f'keystroke "{escaped_key}"'
+            
+        return f'tell application "System Events" to {key_action}{mod_string}'
+
+    # Key presses (including multiple presses)
+    press_match = re.match(r"pyautogui\.press\((.*)\)", command)
+    if press_match:
+        arg_str = press_match.group(1).strip()
+        
+        try:
+            args = [arg.strip() for arg in arg_str.split(',')]
+            if not args or not args[0]: return None
+            key = args[0].strip("'\"")
+            presses = 1
+            if len(args) > 1:
+                presses_arg = args[1]
+                if 'presses=' in presses_arg:
+                    presses = int(presses_arg.split('=')[1].strip())
+                else:
+                    presses = int(presses_arg)
+        except (ValueError, IndexError):
+            key = arg_str.strip("'\"")
+            presses = 1
+
+        key_lower = key.lower()
+        if key_lower in KEY_CODE_MAP:
+            key_action = f"key code {KEY_CODE_MAP[key_lower]}"
+        else:
+            escaped_key = key.replace("\\", "\\\\").replace('"', '\\"')
+            key_action = f'keystroke "{escaped_key}"'
+        
+        if presses > 1:
+            repeat_block = (f'repeat {presses - 1} times\n'
+                            f'\t{key_action}\n'
+                            f'\tdelay {STEP_DELAY}\n'
+                            f'end repeat\n'
+                            f'{key_action}')
+            return f'tell application "System Events"\n{repeat_block}\nend tell'
+        else:
+            return f'tell application "System Events" to {key_action}'
+
+    # Text writing
+    write_match = re.match(r"pyautogui\.write\((.*)\)", command)
+    if write_match:
+        arg_str_raw = write_match.group(1)
+        try:
+            text_to_write = ast.literal_eval(arg_str_raw)
+            if isinstance(text_to_write, str):
+                escaped_text = text_to_write.replace("\\", "\\\\").replace('"', '\\"')
+                return f'tell application "System Events" to keystroke "{escaped_text}"'
+        except (ValueError, SyntaxError):
+            return None
+
+    return None
+
 
 # Parse and execute steps from the AI response
 def parse_steps(text):
     """
-    Extracts pyautogui commands from the AI's text response.
-    This function no longer handles timing itself.
+    Cleans and parses the AI's text response into a structured list of commands.
+    Performs pre-formatting for AppleScript and URL detection during parsing to
+    optimize the execution loop.
     """
-    print("\n--- Starting step parsing ---")
-
-    # ---- Timing the Cleaning Text ----
+    print("\n--- Starting step parsing and pre-processing ---")
     clean_start_time = time.time()
 
     text = text.strip()
-    # Remove markdown code block fences if they exist
     if text.startswith('```') and text.endswith('```'):
         text = text.strip('`').strip()
         text = re.sub(r'^(python|py|text)\n', '', text, flags=re.IGNORECASE).strip()
 
-    # Print the result of the cleaning
     print(f"Cleaned Text for Parsing:\n{text}")
-
     clean_end_time = time.time()
-    cleaned_text_time = clean_end_time - clean_start_time
+    print(f"--- Time to clean text: {clean_end_time - clean_start_time:.4f} seconds ---")
 
-    print(f"--- Time to clean text: {cleaned_text_time:.4f} seconds ---")
-    # ---- END Timing the Cleaning Text ----
+    common_tlds = (r'(com|net|org|gov|edu|io|co|uk|de|jp|ca|au|us|info|biz|dev'
+                   r'|app|ai|tech|online|store|blog|xyz|me|tv|solutions|expert)')
+    url_pattern = re.compile(
+        r'^(https?://|www\.)\S+|'
+        r'(?:[^@\s]+\.)+' + common_tlds,
+        re.IGNORECASE
+    )
 
-    steps = []
-
-    # Attempt to parse as a Python list literal first (e.g., ['pyautogui.press("a")', ...])
+    raw_commands = []
     try:
         potential_list = ast.literal_eval(text)
         if isinstance(potential_list, list):
             print(f"Successfully evaluated list with {len(potential_list)} items.")
-            # Ensure each item is a string and starts with 'pyautogui.'
             for s in potential_list:
                 if isinstance(s, str) and s.startswith('pyautogui.'):
-                    # Standardize typewrite to write if AI uses it
-                    s = s.replace('pyautogui.typewrite', 'pyautogui.write')
-                    steps.append(s)
+                    raw_commands.append(s.replace('pyautogui.typewrite', 'pyautogui.write'))
                 else:
                     print(f"  Skipping non-pyautogui string in list: '{s}'")
-            return steps
-
-    except (ValueError, SyntaxError):
-        print("Not a Python list literal, falling back to line-by-line parsing.")
-        pass # Fallback to line-by-line parsing if ast.literal_eval fails or not a list
-
-    # Fallback: line-by-line parsing assuming each line is a direct command
-    lines = text.splitlines()
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-
-        # Find 'pyautogui.' and slice from there to remove leading characters.
-        start_index = line.find('pyautogui.')
-        if start_index != -1:
-            command = line[start_index:]
-            # Standardize typewrite to write if AI uses it
-            command = command.replace('pyautogui.typewrite', 'pyautogui.write')
-            steps.append(command)
         else:
-            print(f"  Line not matched (skipped, does not contain 'pyautogui.'): '{line}'")
+            raise ValueError("Parsed literal is not a list.")
+    except (ValueError, SyntaxError):
+        print("Not a valid Python list literal, falling back to line-by-line parsing.")
+        lines = text.splitlines()
+        for line in lines:
+            line = line.strip()
+            if not line: continue
+            start_index = line.find('pyautogui.')
+            if start_index != -1:
+                command = line[start_index:]
+                raw_commands.append(command.replace('pyautogui.typewrite', 'pyautogui.write'))
+            else:
+                print(f"  Line not matched (skipped, does not contain 'pyautogui.'): '{line}'")
 
-    print(f"--- Finished parsing. Total steps found: {len(steps)} ---")
-    return steps
+    structured_steps = []
+    for command in raw_commands:
+        step_details = {'original_command': command, 'type': 'other', 'is_url': False}
+        
+        if IS_MACOS:
+            applescript_cmd = pyautogui_to_applescript(command)
+            if applescript_cmd:
+                step_details['applescript_command'] = applescript_cmd
+                step_details['type'] = 'applescript'
 
-def execute_applescript_write(text_to_write):
+        write_match = re.match(r"pyautogui\.write\((.*)\)", command)
+        if write_match:
+            arg_str_raw = write_match.group(1)
+            try:
+                text_to_write = ast.literal_eval(arg_str_raw)
+                if isinstance(text_to_write, str) and url_pattern.search(text_to_write):
+                    step_details['is_url'] = True
+            except (ValueError, SyntaxError):
+                pass
+
+        structured_steps.append(step_details)
+
+    print(f"--- Finished parsing and pre-processing. Total steps: {len(structured_steps)} ---\n")
+    return structured_steps
+
+
+def execute_applescript_command(applescript_command, original_command):
     """
-    Executes an AppleScript command to type the given text.
+    Executes a pre-formatted AppleScript command.
     """
-    # Escape double quotes and backslashes for AppleScript
-    escaped_text = text_to_write.replace("\\", "\\\\").replace('"', '\\"')
-    applescript_command = f'tell application "System Events" to keystroke "{escaped_text}"'
-
     try:
+        if "repeat" in applescript_command:
+            match = re.search(r"presses=(\d+)\)", original_command)
+            if match:
+                presses = match.group(1)
+                key_match = re.search(r"press\((['\"])(.*?)\1", original_command)
+                key = key_match.group(2) if key_match else "key"
+                print(f"Executing (AppleScript): Pressing '{key}' {presses} times with a {STEP_DELAY}s delay between each press.")
+            else:
+                 print(f"Executing (AppleScript): {original_command}")
+        else:
+            print(f"Executing (AppleScript): {original_command}")
+        
         subprocess.run(["osascript", "-e", applescript_command], check=True)
-        print(f"AppleScript Writing: {text_to_write}")
     except subprocess.CalledProcessError as e:
-        print(f"Error executing AppleScript: {e}")
+        print(f"Error executing AppleScript for command '{original_command}': {e}")
+
 
 def execute_step(step):
     """
-    Execute a single step string, e.g. pyautogui.hotkey('command', 'l')
-    This version now consistently uses pyautogui.write with an increased interval.
-    On macOS, it uses AppleScript for writing.
-    It also adds a delay if a URL is written.
+    Executes a single pre-processed step, handling delays for multi-press commands
+    on any operating system.
     """
-    step = step.strip() # Ensure no leading/trailing whitespace
+    original_command = step['original_command']
 
-    try:
-        # Check if the step is a 'pyautogui.write()' command
-        write_match = re.match(r"pyautogui\.write\((.*)\)", step)
-        if write_match:
-            # Release any held-down modifier keys before writing
-            for key in ['command', 'shift', 'option', 'ctrl', 'alt', 'fn']:
-                pyautogui.keyUp(key)
-
-            arg_str_raw = write_match.group(1)
+    if IS_MACOS and step['type'] == 'applescript':
+        execute_applescript_command(step['applescript_command'], original_command)
+    else:
+        # For non-macOS, or if AppleScript conversion failed, handle execution here.
+        is_multi_press = False
+        press_match = re.match(r"pyautogui\.press\((.*)\)", original_command)
+        
+        if press_match:
             try:
-                # Safely evaluate the argument to get the actual string value
-                arg_val = ast.literal_eval(arg_str_raw)
-
-                if isinstance(arg_val, str):
-                    text_to_write = arg_val
-
-                    # Use the appropriate writing method based on OS
-                    if sys.platform == 'darwin':
-                        execute_applescript_write(text_to_write)
+                arg_str = press_match.group(1).strip()
+                args = [arg.strip() for arg in arg_str.split(',')]
+                presses = 1
+                if len(args) > 1:
+                    presses_arg = args[1]
+                    if 'presses=' in presses_arg:
+                        presses = int(presses_arg.split('=')[1].strip())
                     else:
-                        pyautogui.write(text_to_write, interval=0.05)
+                        presses = int(presses_arg)
+                
+                if presses > 1:
+                    is_multi_press = True
+                    key = ast.literal_eval(args[0])
 
-                    # After writing, check if the text was a URL/domain. If so, wait.
-                    common_tlds = (r'(com|net|org|gov|edu|io|co|uk|de|jp|ca|au|us|info|biz|dev'
-                                   r'|app|ai|tech|online|store|blog|xyz|me|tv|solutions|expert)')
-                    url_pattern = re.compile(
-                        r'^(https?://|www\.)\S+|'  # Matches http://, https://, www.
-                        r'(?:[^@\s]+\.)+' + common_tlds,  # Matches domain.com, sub.domain.co.uk, etc.
-                        re.IGNORECASE
-                    )
+                    print(f"Executing (Looped): Pressing '{key}' {presses} times with a {STEP_DELAY}s delay between each press.")
+                    # Loop for (presses - 1) to insert delays between them
+                    for _ in range(presses - 1):
+                        pyautogui.press(key)
+                        time.sleep(STEP_DELAY)
+                    pyautogui.press(key) # The final press
+            except (ValueError, IndexError, SyntaxError):
+                is_multi_press = False # Fallback on parsing error
 
-                    if url_pattern.search(text_to_write):
-                        print("URL/Domain detected, added delay for page to load.")
-                        time.sleep(5)
+        if not is_multi_press:
+            # If it's not a multi-press command, execute it directly
+            try:
+                print(f"Executing: {original_command}")
+                eval(original_command, {"pyautogui": pyautogui})
+            except Exception as e:
+                print(f"Error executing step '{original_command}': {e}")
 
-                else:
-                    print(f"  Warning: Expected string for pyautogui.write, got {type(arg_val)}: {arg_val}")
-            except (ValueError, SyntaxError) as err:
-                print(f"Error parsing write arguments '{arg_str_raw}': {err}")
-            return # End execution for this step after handling write
-
-        # For all other commands (e.g., hotkey, press), execute directly
-        print(f"Executing: {step}")
-        eval(step)
-
-    except Exception as e:
-        print(f"Error executing step '{step}': {e}")
+    if step.get('is_url'):
+        print("URL/Domain detected, adding extra delay for page to load.")
+        time.sleep(5)
 
 
 # --- Main execution flow ---
 
-# ---- Timing the Parsing ----
 parsing_start_time = time.time()
-
 steps = parse_steps(response.text)
-
 parsing_end_time = time.time()
 parsing_time = parsing_end_time - parsing_start_time
-# ---- END Timing the Parsing ----
 
-
-# --- Print the parsed steps and then the time it took ---
-print("\n--- Parsed pyautogui steps: ---")
+print("--- Parsed pyautogui steps: ---")
 if steps:
     for s in steps:
-        print(f"  {s}")
+        if IS_MACOS and s['type'] == 'applescript':
+            print(f"  (AppleScript) {s['original_command']}")
+        else:
+            print(f"  {s['original_command']}")
 else:
     print("No steps were parsed. Please check the AI response format and parsing logic.")
 print("--- End of parsed steps ---")
-
-# Now print the time it took to parse the steps, as requested.
 print(f"--- Time to parse steps: {parsing_time:.4f} seconds ---")
 
 
 print("\n--- Executing steps ---")
+executing_steps_start_time = time.time()
 for step in steps:
-    time.sleep(0.3) # Delay between each command
+    # Execute the command first. The function handles intra-command delays.
     execute_step(step)
-print("--- Finished execution ---")
+    
+    # Apply the unified delay AFTER the entire command has finished.
+    time.sleep(STEP_DELAY) 
 
-# Calculate and print the total execution time
+executing_steps_end_time = time.time()
+print(f"--- Finished execution in {executing_steps_end_time - executing_steps_start_time:.2f} seconds ---")
+
+
 end_time = time.time()
 execution_time = end_time - start_time
 print(f"\nTotal execution time: {execution_time:.2f} seconds")
