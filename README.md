@@ -5,7 +5,7 @@ Example prompt 1: In the selected cell(s) of the sheet, input a 4x4 sample reali
 <img width="551" height="290" alt="image" src="https://github.com/user-attachments/assets/fbea66a6-a59d-4995-89c9-c73233524d65" />
 
 
-Example prompt 2: In this google doc, solve the question
+Example prompt 2: In this google doc, solve the question(s)
 
 <img width="676" height="449" alt="image" src="https://github.com/user-attachments/assets/c81f19c1-46f2-4ca6-9f4c-36b41d2c1a4e" />
 
